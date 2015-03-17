@@ -1,0 +1,10 @@
+-debug
+
+-lib nodejs
+
+-cp src
+
+-main foo.Main
+
+-js build/test.js
+

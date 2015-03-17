@@ -1,0 +1,19 @@
+{
+  "name": "haxe-docker",
+  "version": "0.0.1",
+  "description": "Run haxe via Docker with haxe version and haxelibs local to the project",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "scripts": {
+    "pretest": "cd test ; ../haxelib install nodejs ; ../haxe build.hxml",
+    "test": "node test/build/test.js"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "dockerode": "^2.0.7",
+    "sudo": "^1.0.3"
+  },
+  "private": false
+}

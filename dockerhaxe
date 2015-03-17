@@ -1,0 +1,212 @@
+#!/usr/bin/env node
+
+/**
+ * Wrapper script to call haxe and haxelib on the current folder. Haxelibs
+ * are stored in ./haxe_modules and they are local the the current project.
+ */
+
+var rebuild = false; //Sometimes I want to rebuild the image
+
+var Docker = require('dockerode');
+var fs = require('fs');
+var path = require('path');
+var os = require('os');
+var spawn = require('child_process').spawn;
+var exec = require('child_process').exec
+
+var isMac = os.platform() != 'linux';
+
+var certDir = process.env['HOME'] + '/.boot2docker/certs/boot2docker-vm/';
+var IMAGE_NAME = 'dionjwa/haxe';
+var CONTAINER_NAME = 'haxe';
+
+var opts = {
+  protocol: isMac ? 'https' : 'http',
+  host: isMac ? '192.168.59.103' : '127.0.0.1',
+  port: process.env.DOCKER_PORT || 2376,
+};
+
+if (isMac) {
+  opts['ca'] = fs.readFileSync(certDir + 'ca.pem');
+  opts['cert'] = fs.readFileSync(certDir + 'cert.pem');
+  opts['key'] = fs.readFileSync(certDir + 'key.pem');
+}
+
+var docker = new Docker({
+  protocol: isMac ? 'https' : 'http',
+  host: isMac ? '192.168.59.103' : '127.0.0.1',
+  port: process.env.DOCKER_PORT || 2376,
+  ca: isMac ? fs.readFileSync(certDir + 'ca.pem') : null,
+  cert: isMac ? fs.readFileSync(certDir + 'cert.pem') : null,
+  key: isMac ? fs.readFileSync(certDir + 'key.pem') : null
+});
+
+function onDockerReady(onReady) {
+  docker.ping(function(err, result) {
+    if (err != null) {
+      console.log("docker server not ready, waiting...");
+      setTimeout(function() {
+        onDockerReady(onReady);
+      }, 50);
+    } else {
+      onReady();
+    }
+  });
+}
+
+function startBoot2Docker(onFinished) {
+  if (!isMac) {
+    onFinished();
+    return;
+  }
+  var check = spawn('boot2docker', ['status']);
+  var isRunning = false;
+  check.stdout.on('data', function (data) {
+    if ((data + "").indexOf('running') > -1) {
+      isRunning = true;
+    }
+  });
+
+  check.stderr.on('data', function (data) {
+    console.log('boot2docker stderr: ' + data);
+  });
+
+  check.on('close', function (code) {
+    if (!isRunning) {
+      var start = spawn('boot2docker', ['restart']);
+      start.stdout.on('data', function (data) {
+        console.log('boot2docker restart stdout: ' + data);
+      });
+
+      start.stderr.on('data', function (data) {
+        console.log('boot2docker restart stderr: ' + data);
+      });
+
+      start.on('close', function (code) {
+        if (code == 0) {
+          console.log('boot2docker restarted');
+        }
+        onDockerReady(onFinished);
+      });
+    } else {
+      onFinished();
+    }
+  });
+}
+
+function deleteHaxeContainers(onFinished) {
+  docker.listContainers({'all':1}, function(err, containers) {
+    var toRemove = containers.filter(function(containerData) {
+      return containerData['Image'] == IMAGE_NAME + ":latest";
+    });
+
+    var removeNext = function() {
+      if (toRemove.length == 0) {
+        onFinished();
+      } else {
+        var containerData = toRemove.pop();
+        var container = docker.getContainer(containerData['Id']);
+        container.remove({}, function(err, data) {
+          if (err !== null) {
+            console.error(err);
+          }
+          console.log("Removed haxe container, this exists because a docker process didn't cleanly exit");
+          removeNext();
+        });
+      }
+    };
+    removeNext();
+
+  });
+}
+
+function maybeDeleteImage(onFinished) {
+  if (!rebuild) {
+    onFinished();
+    return;
+  }
+  docker.listImages({'all':0}, function(err, images) {
+    var haxeImage = null;
+    for (i = 0; i < images.length; i++) {
+      var imageData = images[i];
+      if (imageData['RepoTags'].indexOf(IMAGE_NAME + ":latest") > -1) {
+        haxeImage = imageData;
+        break;
+      }
+    }
+    if (haxeImage != null) {
+      var image = docker.getImage(haxeImage['Id']);
+      image.remove({}, function(err, response) {
+        if (err != null) {
+          console.error(err);
+        }
+        if (response != null) {
+          console.log(response);
+        }
+        onFinished();
+      });
+    } else {
+      onFinished();
+    }
+  });
+}
+
+function buildImage(onFinished) {
+  maybeDeleteImage(function() {});
+  docker.listImages({'all':0}, function(err, images) {
+    for (i = 0; i < images.length; i++) {
+      var imageData = images[i];
+      if (imageData['RepoTags'].indexOf(IMAGE_NAME + ":latest") > -1) {
+        onFinished();
+        return;
+      }
+    }
+    console.log("No haxe image found, building");
+    var opts = {cwd:path.join(__dirname, 'etc')};
+    var build = null;
+
+    if (isMac) {
+      build = spawn('docker', ['build', '--tag="' + IMAGE_NAME + '"', '.'], opts);
+    } else {
+      var sudo = require('sudo');
+      var options = {
+          cachePassword: false,
+          spawnOptions: opts
+      };
+      build = sudo(['docker', 'build', '--tag="' + IMAGE_NAME + '"', '.'], options);
+    }
+
+    build.stdout.on('data', function (data) {
+      console.log('stdout: ' + data);
+    });
+
+    build.stderr.on('data', function (data) {
+      console.log('stderr: ' + data);
+    });
+
+    build.on('close', function (code) {
+      console.log('child process exited with code ' + code);
+      onFinished();
+    });
+  });
+}
+
+startBoot2Docker(function() {
+  deleteHaxeContainers(function() {
+    maybeDeleteImage(function() {
+      buildImage(function() {
+        var command = (isMac ? '' : 'sudo ') + 'docker run --name=' + CONTAINER_NAME + ' --rm --tty=false --interactive=false --volume=' + process.cwd() + ':/project --workdir=/project ' + IMAGE_NAME + ':latest ';
+        command += process.argv.slice(2).join(' ');
+        // console.log(command);
+        exec(command, function(err, stdout, stderr) {
+          if (stderr) {
+            console.log(stderr);
+          }
+          if (stdout) {
+            console.log(stdout);
+          }
+        });
+      });
+    });
+  });
+});

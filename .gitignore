@@ -1,0 +1,4 @@
+.vagrant
+node_modules
+test/build
+*.sublime-*
