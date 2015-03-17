@@ -6,9 +6,9 @@ Haxe and the haxelibs are bound to a specific project folder. There is no haxe/h
 
 ### Prerequisites
 
-	Linux: [docker](https://www.docker.com/)
-	Mac: [boot2docker](http://boot2docker.io/), [docker](https://www.docker.com/)
-	Testing: [Vagrant](https://www.vagrantup.com/)
+	Linux: [docker](www.docker.com/)
+	Mac: [boot2docker](boot2docker.io/), [docker](www.docker.com/)
+	Testing: [Vagrant](www.vagrantup.com/)
 
 Windows: in theory this can be made to work in Windows, but I don't have a machine and this is a low priority. Glad to take pull requests here.
 
