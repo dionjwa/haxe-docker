@@ -23,9 +23,9 @@ Windows: in theory this can be made to work in Windows, but I don't have a machi
 
 ### Running
 
-In the terminal:
+In the terminal (assumes your build.hxml file is in the same):
 
-	./haxe
+	./haxe build.hxml
 
 Or
 
