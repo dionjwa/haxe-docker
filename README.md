@@ -6,15 +6,14 @@ Haxe and the haxelibs are bound to a specific project folder. There is no haxe/h
 
 ### Prerequisites
 
-[docker](www.docker.com/)
-
 Linux:
 
 - [docker](www.docker.com/)
 
 Mac:
 
--[boot2docker](boot2docker.io/), [docker](www.docker.com/)
+- [boot2docker](boot2docker.io/)
+- [docker](www.docker.com/)
 
 Testing:
 
