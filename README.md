@@ -2,7 +2,11 @@
 
 ### Why?
 
-Haxe and the haxelibs are bound to a specific project folder. There is no haxe/haxelib binary installed on the host machine, and the haxelib directory ('haxe_modules') is local to the current working directory. This means different projects can use different versions of haxe.
+If you have different projects that require different versions of haxe, it is difficult to manage. Also haxelibs are installed globally.
+
+These scripts are replacements for the haxe and haxelib binaries. They create a docker contained version of haxe and map the haxelibs to a local folder. This means you can have a project specific version of haxe and haxelibs.
+
+It is also convenient for automated build systems.
 
 ### Prerequisites
 
@@ -25,11 +29,11 @@ Windows: in theory this can be made to work in Windows, but I don't have a machi
 
 In the terminal (assumes your build.hxml file is in the same):
 
-	./haxe build.hxml
+	<path to>/haxe build.hxml
 
 Or
 
-	./haxelib install <library>
+	<path to>/haxelib install <library>
 
 The haxe and haxelib scripts can be copied and moved anywhere as long as the path to dockerhaxe is modified. The haxelib script will create a 'haxe_modules' folder in the current working directory. Both the haxe and haxelib.
 
