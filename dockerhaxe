@@ -97,7 +97,7 @@ function startBoot2Docker(onFinished) {
 function deleteHaxeContainers(onFinished) {
   docker.listContainers({'all':1}, function(err, containers) {
     var toRemove = containers.filter(function(containerData) {
-      return containerData['Image'] == IMAGE_NAME + ":latest";
+      return containerData['Image'] == IMAGE_NAME + ":latest" || containerData['Image'] == 'local/haxe:latest';
     });
 
     var removeNext = function() {

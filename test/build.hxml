@@ -1,3 +1,7 @@
+-cmd mkdir -p build
+
+--next
+
 -debug
 
 -lib nodejs
