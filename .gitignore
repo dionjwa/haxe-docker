@@ -2,4 +2,4 @@
 node_modules
 test/build
 *.sublime-*
-test/haxe_modules
+*.haxelib

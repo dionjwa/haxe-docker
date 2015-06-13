@@ -12,17 +12,17 @@ var fs = require('fs');
 var path = require('path');
 var os = require('os');
 var spawn = require('child_process').spawn;
-var exec = require('child_process').exec
+var exec = require('child_process').exec;
 
 var isMac = os.platform() != 'linux';
 
 var certDir = process.env['HOME'] + '/.boot2docker/certs/boot2docker-vm/';
-var IMAGE_NAME = 'dionjwa/haxe';
+var IMAGE_NAME = 'haxe';
 var CONTAINER_NAME = 'haxe';
 
 var opts = {
   protocol: isMac ? 'https' : 'http',
-  host: isMac ? '192.168.59.103' : '127.0.0.1',
+  host: '127.0.0.1',
   port: process.env.DOCKER_PORT || 2376,
 };
 
@@ -30,16 +30,12 @@ if (isMac) {
   opts['ca'] = fs.readFileSync(certDir + 'ca.pem');
   opts['cert'] = fs.readFileSync(certDir + 'cert.pem');
   opts['key'] = fs.readFileSync(certDir + 'key.pem');
+
+  var result = require('child_process').spawnSync('boot2docker', ['ip']);
+  opts['host'] = result.stdout.toString('utf8').trim();
 }
 
-var docker = new Docker({
-  protocol: isMac ? 'https' : 'http',
-  host: isMac ? '192.168.59.103' : '127.0.0.1',
-  port: process.env.DOCKER_PORT || 2376,
-  ca: isMac ? fs.readFileSync(certDir + 'ca.pem') : null,
-  cert: isMac ? fs.readFileSync(certDir + 'cert.pem') : null,
-  key: isMac ? fs.readFileSync(certDir + 'key.pem') : null
-});
+var docker = new Docker(opts);
 
 function onDockerReady(onReady) {
   docker.ping(function(err, result) {
@@ -96,6 +92,10 @@ function startBoot2Docker(onFinished) {
 
 function deleteHaxeContainers(onFinished) {
   docker.listContainers({'all':1}, function(err, containers) {
+    if (containers == null) {
+      onFinished();
+      return;
+    }
     var toRemove = containers.filter(function(containerData) {
       return containerData['Image'] == IMAGE_NAME + ":latest" || containerData['Image'] == 'local/haxe:latest';
     });
@@ -126,6 +126,10 @@ function maybeDeleteImage(onFinished) {
     return;
   }
   docker.listImages({'all':0}, function(err, images) {
+    if (images == null) {
+      onFinished();
+      return;
+    }
     var haxeImage = null;
     for (i = 0; i < images.length; i++) {
       var imageData = images[i];
@@ -154,6 +158,10 @@ function maybeDeleteImage(onFinished) {
 function buildImage(onFinished) {
   maybeDeleteImage(function() {});
   docker.listImages({'all':0}, function(err, images) {
+    if (images == null) {
+      onFinished();
+      return;
+    }
     for (i = 0; i < images.length; i++) {
       var imageData = images[i];
       if (imageData['RepoTags'].indexOf(IMAGE_NAME + ":latest") > -1) {
@@ -197,7 +205,6 @@ startBoot2Docker(function() {
       buildImage(function() {
         var command = (isMac ? '' : 'sudo ') + 'docker run --name=' + CONTAINER_NAME + ' --rm --tty=false --interactive=false --volume=' + process.cwd() + ':/project --workdir=/project ' + IMAGE_NAME + ':latest ';
         command += process.argv.slice(2).join(' ');
-        // console.log(command);
         exec(command, function(err, stdout, stderr) {
           if (stderr) {
             console.log(stderr);

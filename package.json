@@ -7,7 +7,7 @@
     "url": ""
   },
   "scripts": {
-    "pretest": "cd test ; ../haxelib install nodejs ; ../haxe build.hxml",
+    "pretest": "cd test ; ../haxelib newrepo ; ../haxelib install nodejs ; ../haxe build.hxml",
     "test": "node test/build/test.js"
   },
   "devDependencies": {},

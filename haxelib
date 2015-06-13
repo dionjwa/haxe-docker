@@ -1,3 +1,2 @@
 #!/usr/bin/env bash
-mkdir -p haxe_modules
 `dirname $0`/dockerhaxe haxelib $@
