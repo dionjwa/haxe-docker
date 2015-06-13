@@ -19,10 +19,6 @@ Mac:
 - [boot2docker](boot2docker.io/)
 - [docker](www.docker.com/)
 
-Testing:
-
-- [Vagrant](www.vagrantup.com/)
-
 Windows: in theory this can be made to work in Windows, but I don't have a machine and this is a low priority. Glad to take pull requests here.
 
 ### Running
@@ -33,7 +29,9 @@ In the terminal (assumes your build.hxml file is in the same):
 
 Or
 
+	<path to>/haxelib newrepo (do this ONCE)
 	<path to>/haxelib install <library>
+
 
 The haxe and haxelib scripts can be copied and moved anywhere as long as the path to dockerhaxe is modified. The haxelib script will create a 'haxe_modules' folder in the current working directory. Both the haxe and haxelib.
 
